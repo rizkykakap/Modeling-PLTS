@@ -2,30 +2,133 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import base64
+import os
 
 # --- 1. KONFIGURASI HALAMAN ---
 st.set_page_config(
-    page_title="Kalkulator Solar System Pro V6.3",
+    page_title="Kalkulator Solar System Pro V6.7",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- CSS CUSTOM ---
+# --- 2. FUNGSI BACKGROUND ---
+def set_background(image_filename):
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    image_path = os.path.join(script_dir, image_filename)
+
+    if os.path.isfile(image_path):
+        with open(image_path, "rb") as f:
+            img_data = f.read()
+        b64_encoded = base64.b64encode(img_data).decode()
+        style = f"""
+            <style>
+            [data-testid="stAppViewContainer"] {{
+                background-image: url(data:image/jpeg;base64,{b64_encoded});
+                background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
+                background-attachment: fixed;
+            }}
+            </style>
+        """
+        st.markdown(style, unsafe_allow_html=True)
+
+# PANGGIL BACKGROUND (Pastikan file ada)
+set_background('1006752.png')
+
+# --- 3. CSS CUSTOM (MODULAR CARDS & WIDGET STYLING) ---
 st.markdown("""
 <style>
-    .header-style { font-size:26px; font-weight: bold; color: #1565C0; margin-bottom: 5px; border-left: 5px solid #1565C0; padding-left: 10px; }
-    .sub-header { font-size:18px; font-weight: bold; color: #424242; margin-top: 20px; margin-bottom: 10px; background-color: #f0f2f6; padding: 5px 10px; border-radius: 5px;}
-    .pros-box { background-color: #E8F5E9; padding: 10px; border-radius: 5px; border-left: 3px solid #43A047; font-size: 14px; margin-bottom: 5px; }
-    .cons-box { background-color: #FFEBEE; padding: 10px; border-radius: 5px; border-left: 3px solid #E53935; font-size: 14px; margin-bottom: 5px; }
-    .component-box { background-color: #FFF3E0; padding: 10px; border-radius: 5px; border: 1px solid #FFB74D; font-size: 13px; margin-top: 5px;}
-    .roi-box { background-color: #E3F2FD; padding: 15px; border-radius: 8px; border: 1px solid #2196F3; margin-top: 15px; }
+    /* RESET CONTAINER UTAMA AGAR TRANSPARAN */
+    .block-container {
+        background-color: transparent !important;
+        box-shadow: none !important;
+        padding-top: 1rem;
+        max-width: 1200px;
+        margin: auto;
+    }
+
+    /* === GAYA KARTU UTAMA (UNTUK TEKS/HTML) === */
+    .card {
+        background-color: rgba(255, 255, 255, 0.95);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255,255,255,0.5);
+    }
+
+    /* === WIDGET CARDS (TABEL & GRAFIK) === */
+    
+    /* Membungkus DataFrame (Tabel) agar jadi kartu */
+    [data-testid="stDataFrame"] {
+        background-color: rgba(255, 255, 255, 0.95);
+        padding: 15px;
+        border-radius: 16px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: 1px solid #f0f0f0;
+    }
+
+    /* Membungkus Metric (Angka Besar) agar jadi kartu */
+    [data-testid="stMetric"] {
+        background-color: rgba(255, 255, 255, 0.95);
+        border-radius: 16px;
+        padding: 15px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        text-align: center;
+        border: 1px solid #f0f0f0;
+    }
+
+    /* === SIDEBAR GLASSMORPHISM (BLUR) === */
+    [data-testid="stSidebar"] {
+        background-color: rgba(255, 255, 255, 0.65) !important;
+        backdrop-filter: blur(25px) saturate(180%);
+        border-right: 1px solid rgba(255, 255, 255, 0.4);
+    }
+
+    /* === TYPOGRAPHY & COLORS === */
+    h1, h2, h3, h4, h5, h6, p, span, div, label, li {
+        color: #333333 !important;
+    }
+    
+    .main-title {
+        font-size: 32px; font-weight: 800; color: #1565C0 !important;
+        text-align: center; margin-bottom: 5px;
+    }
+    .main-caption {
+        font-size: 16px; color: #555 !important;
+        text-align: center; margin-bottom: 20px;
+    }
+
+    /* === TAB STYLING === */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: rgba(255, 255, 255, 0.8);
+        border-radius: 15px;
+        padding: 8px;
+        gap: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 10px;
+        background-color: transparent;
+        border: none;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #FFFFFF !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        color: #1565C0 !important;
+        font-weight: bold;
+    }
+
+    /* === INFO BOXES === */
+    .pros-cons-card { padding: 15px; border-radius: 10px; margin-bottom: 10px; font-size: 14px; }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# DATABASE & KONSTANTA
+# DATABASE LENGKAP (DIPULIHKAN)
 # ==========================================
-# Data Tarif PLN (Estimasi per 2025/2026)
 TARIF_PLN = {
     "900 VA (RTM)": 1352,
     "1300 VA - 2200 VA": 1444.70,
@@ -38,48 +141,48 @@ TARIF_PLN = {
 PANEL_SPECS = {
     "Monocrystalline (Half-Cut/PERC)": {
         "min_wp": 100, "max_wp": 700, "default_wp": 550, "price_per_wp": 3200,
-        "pros": ["Efisiensi tinggi (s/d 22%)", "Performa baik saat mendung/teduh", "Hemat tempat (densitas daya tinggi)"],
-        "cons": ["Harga investasi sedikit lebih tinggi dibanding Poly"]
+        "pros": ["Efisiensi tinggi (s/d 22%)", "Performa baik saat mendung", "Hemat tempat"],
+        "cons": ["Harga investasi sedikit lebih tinggi"]
     },
     "Polycrystalline (Standard)": {
         "min_wp": 50, "max_wp": 360, "default_wp": 250, "price_per_wp": 2600,
-        "pros": ["Harga per panel lebih ekonomis", "Tahan panas berlebih (koefisien suhu baik)"],
-        "cons": ["Butuh area atap lebih luas", "Teknologi lama, efisiensi lebih rendah"]
+        "pros": ["Harga per panel lebih ekonomis", "Tahan panas berlebih"],
+        "cons": ["Butuh area atap lebih luas", "Teknologi lama"]
     }
 }
 
 BATTERY_SPECS = {
-    "Lead Acid / VRLA / Gel / Deep Cycle": {
-        "dod": 0.50, "default_v": 12.0, "price_per_kwh": 2500000,
-        "min_ah": 7, "max_ah": 250, "default_ah": 100, 
-        "pros": ["Biaya awal paling murah", "Teknologi matang & mudah didapat", "Aman (tidak mudah terbakar)"],
-        "cons": ["Umur pendek (1-2 thn ganti)", "Sangat berat", "Hanya boleh dipakai 50% (DoD)"]
+    "Lead Acid / VRLA / Gel": {
+        "dod": 0.50, "default_v": 12.0, "price_per_kwh": 2500000, 
+        "min_ah": 7, "max_ah": 250, "default_ah": 100,
+        "pros": ["Biaya awal murah", "Mudah didapat"],
+        "cons": ["Umur pendek (1-2 thn)", "Berat", "DoD rendah (50%)"]
     },
-    "Lithium LiFePO4 (3.2V Prismatic)": {
-        "dod": 0.90, "default_v": 3.2, "price_per_kwh": 4800000,
-        "min_ah": 25, "max_ah": 320, "default_ah": 100, 
-        "pros": ["Umur sangat panjang (7-10 thn)", "Sangat Aman & Stabil", "Bisa dipakai sampai 90% (DoD)"],
-        "cons": ["Investasi awal cukup mahal", "Membutuhkan BMS (Battery Management System)"]
+    "Lithium LiFePO4 (3.2V)": {
+        "dod": 0.90, "default_v": 3.2, "price_per_kwh": 4800000, 
+        "min_ah": 25, "max_ah": 320, "default_ah": 100,
+        "pros": ["Umur panjang (7-10 thn)", "Aman", "DoD tinggi (90%)"],
+        "cons": ["Harga awal mahal", "Perlu BMS"]
     },
     "Lithium Ion / NMC (3.7V)": {
-        "dod": 0.85, "default_v": 3.7, "price_per_kwh": 4200000,
+        "dod": 0.85, "default_v": 3.7, "price_per_kwh": 4200000, 
         "min_ah": 2, "max_ah": 200, "default_ah": 50,
-        "pros": ["Densitas energi tertinggi (Kecil tapi kuat)", "Ringan & Kompak", "Populer untuk kendaraan listrik"],
-        "cons": ["Sensitif suhu panas", "Resiko thermal runaway (terbakar) lebih tinggi"]
+        "pros": ["Densitas energi tinggi", "Ringan"],
+        "cons": ["Sensitif panas", "Resiko thermal"]
     },
 }
 
 SYSTEM_META = {
-    "DC": {"pros": ["Efisiensi Tertinggi (Tanpa Inverter)", "Biaya Termurah"], "cons": ["Hanya bisa menyalakan alat DC 12/24V", "Kabel harus tebal (Losses tinggi)"]},
-    "On-Grid": {"pros": ["Termurah per Watt", "Tanpa Baterai (Bebas Perawatan)", "ROI Tercepat (Paling Hemat)"], "cons": ["Mati total saat PLN padam (Anti-Islanding)", "Wajib Izin/Net Metering PLN"]},
-    "Off-Grid": {"pros": ["Mandiri Energi 100%", "Bisa dipasang di pelosok (Tanpa PLN)"], "cons": ["Biaya Mahal (Investasi Baterai)", "Baterai perlu diganti berkala"]},
-    "Hybrid": {"pros": ["Hemat Tagihan + Backup saat mati lampu", "Fitur Paling Lengkap & Canggih"], "cons": ["Biaya Paling Mahal (Inverter Hybrid + Baterai)", "Sistem Kompleks"]}
+    "DC": {"pros": ["Efisiensi Tertinggi", "Biaya Termurah"], "cons": ["Hanya alat DC", "Kabel harus tebal"]},
+    "On-Grid": {"pros": ["Termurah per Watt", "Bebas Perawatan", "ROI Cepat"], "cons": ["Mati saat PLN padam", "Wajib Izin"]},
+    "Off-Grid": {"pros": ["Mandiri Energi", "Bisa di pelosok"], "cons": ["Biaya Mahal (Baterai)", "Perawatan Rutin"]},
+    "Hybrid": {"pros": ["Hemat + Backup", "Fitur Lengkap"], "cons": ["Biaya Mahal", "Kompleks"]}
 }
 
 VOLTAGE_OPTIONS = [2.0, 3.2, 3.7, 12.0, 24.0, 48.0]
 
 # ==========================================
-# FUNGSI BANTUAN
+# FUNGSI LOGIKA
 # ==========================================
 def format_rupiah(angka):
     return f"Rp {int(angka):,}".replace(",", ".")
@@ -89,20 +192,19 @@ def generate_rab(items):
     total_biaya = 0
     raw_labels = []
     raw_values = []
-    
     for i in items:
         subtotal = i['qty'] * i['price']
         total_biaya += subtotal
         data.append({
             "Uraian Pekerjaan": i['item'],
-            "Volume": i['qty'],
+            "Volume": f"{i['qty']}",
             "Satuan": i['unit'],
             "Harga Satuan": format_rupiah(i['price']),
             "Total Harga": format_rupiah(subtotal)
         })
+        # Data chart
         short_label = i['item'].split(' ')[0]
-        if "Kabel" in i['item'] or "Mounting" in i['item'] or "Proteksi" in i['item']:
-            short_label = "Aksesoris"
+        if "Kabel" in i['item'] or "Mounting" in i['item']: short_label = "Support"
         raw_labels.append(short_label) 
         raw_values.append(subtotal)
         
@@ -115,375 +217,358 @@ def generate_rab(items):
 def plot_rab_pie(labels, values):
     df_chart = pd.DataFrame({'label': labels, 'value': values})
     df_chart = df_chart.groupby('label').sum().reset_index()
-    
     fig, ax = plt.subplots(figsize=(3, 3))
-    ax.pie(df_chart['value'], labels=df_chart['label'], autopct='%1.1f%%', startangle=90, textprops={'fontsize': 8})
+    # Warna Pie Chart
+    colors = plt.cm.Pastel1(np.linspace(0, 1, len(df_chart)))
+    ax.pie(df_chart['value'], labels=df_chart['label'], autopct='%1.1f%%', startangle=90, colors=colors, textprops={'fontsize': 8, 'color': '#333333'})
     ax.axis('equal') 
-    plt.tight_layout()
+    fig.patch.set_alpha(0) 
     return fig
 
+# --- CARD COMPONENT RENDERING ---
 def display_roi_analysis(total_invest, yearly_savings_potential, system_type):
-    # UPDATE: Mengurangi persentase maintenance agar perhitungan ROI lebih realistis
-    # On-Grid minim perawatan (0.5%), Baterai butuh sinking fund (1%)
-    maint_percent = 0.005 
-    if "Battery" in system_type: 
-        maint_percent = 0.015 
-    
+    maint_percent = 0.005 if "Battery" not in system_type else 0.015 
     yearly_maintenance = total_invest * maint_percent
     net_savings = yearly_savings_potential - yearly_maintenance
     
-    if net_savings <= 0:
-        roi_years = 999
-        roi_text = "Tidak Balik Modal"
-    else:
-        roi_years = total_invest / net_savings
-        roi_text = f"{roi_years:.1f} Tahun"
+    roi_years = 999 if net_savings <= 0 else total_invest / net_savings
+    roi_text = "Tidak Balik Modal" if roi_years == 999 else f"{roi_years:.1f} Tahun"
 
-    st.markdown("<div class='sub-header'>📊 Analisis Balik Modal (ROI)</div>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        st.metric("Total Investasi", format_rupiah(total_invest))
-        st.metric("Estimasi ROI", roi_text, delta_color="normal", help="Estimasi waktu yang dibutuhkan agar penghematan listrik menutup biaya modal.")
-    
-    with col2:
-        st.write("**Cashflow Tahunan:**")
-        st.caption(f"➕ Hemat Listrik: {format_rupiah(yearly_savings_potential)} /thn")
-        st.caption(f"➖ Dana Perawatan (Est): {format_rupiah(yearly_maintenance)} /thn")
-        st.markdown("---")
-        st.write(f"**💰 Net Benefit: {format_rupiah(net_savings)} /thn**")
+    st.markdown(f"""
+    <div class="card" style="border-left: 5px solid #2196F3;">
+        <h4 style='color:#1565C0; margin:0;'>📊 Analisis Balik Modal (ROI)</h4>
+        <hr style="border-color:#E3F2FD;">
+        <div style='display: flex; justify-content: space-between; align-items: center;'>
+            <div>
+                <small>Total Investasi</small><br>
+                <b style='font-size: 20px; color: #D32F2F;'>{format_rupiah(total_invest)}</b>
+            </div>
+            <div style='text-align: right;'>
+                <small>Estimasi BEP</small><br>
+                <b style='font-size: 20px; color: #2E7D32;'>{roi_text}</b>
+            </div>
+        </div>
+        <div style="background-color:#E3F2FD; padding:10px; border-radius:8px; margin-top:10px;">
+            <small>
+            ➕ Hemat Listrik: {format_rupiah(yearly_savings_potential)} /thn<br>
+            ➖ Perawatan (Est): {format_rupiah(yearly_maintenance)} /thn<br>
+            <b>💰 Net Benefit: {format_rupiah(net_savings)} /thn</b>
+            </small>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 def display_pros_cons_system(sys_type):
     data = SYSTEM_META[sys_type]
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown(f"<div class='pros-box'>✅ <b>KELEBIHAN SISTEM {sys_type.upper()}:</b><br>{'<br>'.join(['• '+x for x in data['pros']])}</div>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="pros-cons-card" style="background-color: #E8F5E9; border-left: 5px solid #43A047;">
+            <b style="color: #2E7D32;">✅ KELEBIHAN {sys_type.upper()}</b><br>
+            {'<br>'.join(['• '+x for x in data['pros']])}
+        </div>
+        """, unsafe_allow_html=True)
     with c2:
-        st.markdown(f"<div class='cons-box'>⚠️ <b>KEKURANGAN SISTEM {sys_type.upper()}:</b><br>{'<br>'.join(['• '+x for x in data['cons']])}</div>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="pros-cons-card" style="background-color: #FFEBEE; border-left: 5px solid #E53935;">
+            <b style="color: #C62828;">⚠️ KEKURANGAN {sys_type.upper()}</b><br>
+            {'<br>'.join(['• '+x for x in data['cons']])}
+        </div>
+        """, unsafe_allow_html=True)
 
-# FUNGSI BARU: Menampilkan Pros/Cons Komponen Terpilih
 def display_component_analysis(panel_type, bat_type=None):
-    st.markdown("##### 🔍 Analisis Komponen Terpilih")
+    st.markdown('<div class="card"><h5>🔍 Analisis Komponen Terpilih</h5>', unsafe_allow_html=True)
     c1, c2 = st.columns(2)
     
-    # Panel Analysis
     p_data = PANEL_SPECS[panel_type]
     with c1:
-        html_panel = f"<b>PANEL: {panel_type}</b><br>"
-        html_panel += "<i>Kelebihan:</i><br>" + "<br>".join([f"+ {x}" for x in p_data['pros']]) + "<br>"
-        html_panel += "<i>Kekurangan:</i><br>" + "<br>".join([f"- {x}" for x in p_data['cons']])
-        st.markdown(f"<div class='component-box'>{html_panel}</div>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style="background-color: #FFF3E0; padding: 12px; border-radius: 8px; border: 1px solid #FFE0B2;">
+            <b>PANEL: {panel_type}</b><br>
+            <hr style="margin:5px 0; border-color:#FFCC80">
+            <span style="color:#2E7D32; font-size:13px;">+ {'<br>+ '.join(p_data['pros'])}</span><br>
+            <span style="color:#C62828; font-size:13px;">- {'<br>- '.join(p_data['cons'])}</span>
+        </div>
+        """, unsafe_allow_html=True)
     
-    # Battery Analysis (If exists)
-    if bat_type:
-        b_data = BATTERY_SPECS[bat_type]
-        with c2:
-            html_bat = f"<b>BATERAI: {bat_type}</b><br>"
-            html_bat += "<i>Kelebihan:</i><br>" + "<br>".join([f"+ {x}" for x in b_data['pros']]) + "<br>"
-            html_bat += "<i>Kekurangan:</i><br>" + "<br>".join([f"- {x}" for x in b_data['cons']])
-            st.markdown(f"<div class='component-box'>{html_bat}</div>", unsafe_allow_html=True)
-    else:
-        with c2:
-             st.markdown(f"<div class='component-box' style='background-color:#f0f0f0; border-color:#ccc;'><b>BATERAI: Tidak Ada</b><br>Sistem On-Grid tidak menggunakan baterai.</div>", unsafe_allow_html=True)
+    with c2:
+        if bat_type:
+            b_data = BATTERY_SPECS[bat_type]
+            html = f"""
+            <div style="background-color: #FFF3E0; padding: 12px; border-radius: 8px; border: 1px solid #FFE0B2;">
+                <b>BATERAI: {bat_type}</b><br>
+                <hr style="margin:5px 0; border-color:#FFCC80">
+                <span style="color:#2E7D32; font-size:13px;">+ {'<br>+ '.join(b_data['pros'])}</span><br>
+                <span style="color:#C62828; font-size:13px;">- {'<br>- '.join(b_data['cons'])}</span>
+            </div>
+            """
+        else:
+            html = """<div style="background-color: #F5F5F5; padding: 12px; border-radius: 8px; color: #757575;"><b>BATERAI: Tidak Ada</b><br>Sistem ini tanpa baterai.</div>"""
+        st.markdown(html, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
 # SIDEBAR
 # ==========================================
 st.sidebar.title("🎛️ Parameter Input")
 
+file_musik = 'audiobg.mp3' 
+audio_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), file_musik)
+if os.path.isfile(audio_path):
+    st.sidebar.markdown("### 🎵 Musik Latar")
+    st.sidebar.audio(audio_path, format='audio/mp3', start_time=0)
+    st.sidebar.markdown("---")
+
 st.sidebar.markdown("### 1️⃣ Profil Listrik")
-# UPDATE: Mengganti input manual tarif dengan Golongan Daya
-metode_hitung = st.sidebar.radio("Dasar Perhitungan:", ["Tagihan Listrik (Estimasi)", "Manual (Watt & Jam)"])
-golongan_daya = st.sidebar.selectbox("Golongan Daya PLN:", list(TARIF_PLN.keys()), index=1)
+metode = st.sidebar.radio("Hitung Berdasarkan:", ["Tagihan (Estimasi)", "Manual (Watt)"])
+gol = st.sidebar.selectbox("Golongan Daya:", list(TARIF_PLN.keys()), index=1)
+trf = st.sidebar.number_input("Tarif/kWh (Rp)", 100., 5000., 1444.7, step=50.) if gol == "Manual Input" else TARIF_PLN[gol]
+st.sidebar.caption(f"⚡ Tarif: {format_rupiah(trf)} /kWh")
 
-# Set Harga per kWh berdasarkan golongan
-if golongan_daya == "Manual Input":
-    harga_per_kwh = st.sidebar.number_input("Input Tarif per kWh (Rp)", 100.0, 5000.0, 1444.70, step=50.0)
+wh_day, est_bill = 0, 0
+if metode == "Tagihan (Estimasi)":
+    bill = st.sidebar.number_input("Tagihan Bulanan (Rp)", 50000, 100000000, 500000, step=50000)
+    wh_day = ((bill / trf) / 30) * 1000
+    est_bill = bill
 else:
-    harga_per_kwh = TARIF_PLN[golongan_daya]
-    st.sidebar.caption(f"⚡ Tarif: {format_rupiah(harga_per_kwh)} /kWh")
+    watt = st.sidebar.number_input("Total Watt Alat", 1, 50000, 100)
+    hours = st.sidebar.number_input("Jam Nyala/Hari", 1, 24, 12)
+    wh_day = watt * hours
+    est_bill = (wh_day/1000) * 30 * trf
 
-wh_harian_ac = 0
-total_watt_manual = 0
-estimated_bill_saving = 0
-
-if metode_hitung == "Tagihan Listrik (Estimasi)":
-    biaya_bulanan = st.sidebar.number_input("Rata2 Tagihan Listrik (Rp)", 50000, 100000000, 500000, step=50000)
-    kwh_bulanan = biaya_bulanan / harga_per_kwh
-    wh_harian_ac = (kwh_bulanan / 30) * 1000
-    estimated_bill_saving = biaya_bulanan 
-    st.sidebar.info(f"⚡ Beban Harian: **{wh_harian_ac:,.0f} Wh**")
-else:
-    total_watt_manual = st.sidebar.number_input("Total Daya Alat (Watt)", 1, 50000, 100)
-    jam_nyala_manual = st.sidebar.number_input("Durasi Nyala (Jam/hari)", 1, 24, 12)
-    wh_harian_ac = total_watt_manual * jam_nyala_manual
-    estimated_bill_saving = (wh_harian_ac/1000) * 30 * harga_per_kwh
-    st.sidebar.info(f"⚡ Beban Harian: **{wh_harian_ac:,.0f} Wh**")
-
+st.sidebar.info(f"⚡ Beban Harian: **{wh_day:,.0f} Wh**")
 st.sidebar.markdown("---")
 
 st.sidebar.markdown("### 2️⃣ Komponen")
-# Panel Logic
-jenis_panel = st.sidebar.selectbox("Jenis Panel Surya", list(PANEL_SPECS.keys()))
-p_specs = PANEL_SPECS[jenis_panel]
-watt_panel_pilihan = st.sidebar.number_input(
-    f"Kapasitas per Panel ({p_specs['min_wp']}-{p_specs['max_wp']} Wp)", 
-    min_value=p_specs['min_wp'], 
-    max_value=p_specs['max_wp'], 
-    value=p_specs['default_wp'],
-    step=10
-)
+# Panel Input
+p_type = st.sidebar.selectbox("Jenis Panel", list(PANEL_SPECS.keys()))
+p_data = PANEL_SPECS[p_type]
+wp_panel = st.sidebar.number_input("Kapasitas Panel (Wp)", min_value=p_data['min_wp'], max_value=p_data['max_wp'], value=p_data['default_wp'], step=10)
 
-# Battery Logic
-jenis_baterai = st.sidebar.selectbox("Jenis Baterai", list(BATTERY_SPECS.keys()))
-b_specs = BATTERY_SPECS[jenis_baterai]
-default_volt_bat = b_specs["default_v"]
-
-try: idx_def = VOLTAGE_OPTIONS.index(default_volt_bat)
-except: idx_def = 3 
-volt_baterai_unit = st.sidebar.selectbox("Voltase per Unit/Cell (V)", VOLTAGE_OPTIONS, index=idx_def)
-
-kapasitas_baterai_unit = st.sidebar.number_input(
-    f"Kapasitas per Unit ({b_specs['min_ah']}-{b_specs['max_ah']} Ah)", 
-    min_value=b_specs['min_ah'], 
-    max_value=b_specs['max_ah'], 
-    value=b_specs['default_ah'],
-    step=5
-)
+# Baterai Input
+b_type = st.sidebar.selectbox("Jenis Baterai", list(BATTERY_SPECS.keys()))
+b_data = BATTERY_SPECS[b_type]
+idx_v = 3
+try: idx_v = VOLTAGE_OPTIONS.index(b_data["default_v"])
+except: pass
+v_bat = st.sidebar.selectbox("Voltase Unit (V)", VOLTAGE_OPTIONS, index=idx_v)
+ah_bat = st.sidebar.number_input("Kapasitas Unit (Ah)", min_value=b_data['min_ah'], max_value=b_data['max_ah'], value=b_data['default_ah'], step=5)
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 3️⃣ Parameter Sistem")
-hari_efektif = st.sidebar.number_input("Sun Hours (Jam/Hari)", 2.0, 8.0, 3.5, help="Rata-rata jam efektif matahari di Indonesia (3.5 - 4.5 jam)")
-hari_otonomi = st.sidebar.number_input("Cadangan Mendung (Hari)", 1, 5, 1, help="Berapa hari sistem baterai bertahan tanpa matahari")
-
-saran_volt = 12
-if wh_harian_ac > 5000: saran_volt = 48
-elif wh_harian_ac > 1500: saran_volt = 24
-volt_sistem = st.sidebar.selectbox("Voltase Sistem Total (V)", [12, 24, 48], index=[12, 24, 48].index(saran_volt))
+h_sun = st.sidebar.number_input("Sun Hours (Jam)", 2.0, 8.0, 3.5)
+h_backup = st.sidebar.number_input("Cadangan (Hari)", 1, 5, 1)
+v_sys_rec = 48 if wh_day > 5000 else 24 if wh_day > 1500 else 12
+v_sys = st.sidebar.selectbox("Voltase Sistem (V)", [12, 24, 48], index=[12, 24, 48].index(v_sys_rec))
 
 # ==========================================
-# LOGIKA HITUNGAN
+# MAIN APP
 # ==========================================
-dod_pilihan = BATTERY_SPECS[jenis_baterai]["dod"]
+st.markdown("""
+<div class="card" style="text-align: center; padding: 30px;">
+    <h1 class="main-title">Rekomendasi PLTS Untuk Rumah</h1>
+    <p class="main-caption">Simulasi PLTS Akurat dengan Analisis ROI & Detail Komponen</p>
+</div>
+""", unsafe_allow_html=True)
 
-def hitung_baterai_detail(total_wh_needed):
-    wh_kapasitas_real = total_wh_needed * hari_otonomi / dod_pilihan
-    ah_total_sistem = wh_kapasitas_real / volt_sistem
-    butuh_seri = np.ceil(volt_sistem / volt_baterai_unit)
-    butuh_paralel = np.ceil(ah_total_sistem / kapasitas_baterai_unit)
-    total_unit = butuh_seri * butuh_paralel
-    
-    kwh_real = (total_unit * volt_baterai_unit * kapasitas_baterai_unit) / 1000
-    
-    return {
-        "seri": int(butuh_seri),
-        "paralel": int(butuh_paralel),
-        "total_unit": int(total_unit),
-        "volt_real_pack": butuh_seri * volt_baterai_unit,
-        "ah_total_sistem": butuh_paralel * kapasitas_baterai_unit,
-        "kwh_total": kwh_real
-    }
+tab1, tab2, tab3, tab4 = st.tabs(["💡 DC SYSTEM", "🏠 ON-GRID", "🔋 OFF-GRID", "🔄 HYBRID"])
 
-def hitung_panel(target_wp):
-    jml_panel = np.ceil(target_wp / watt_panel_pilihan)
-    return int(jml_panel), int(jml_panel * watt_panel_pilihan)
+def calc_panel(req_wp): 
+    n = int(np.ceil(req_wp / wp_panel))
+    return n, n * wp_panel
 
-# ==========================================
-# HALAMAN UTAMA
-# ==========================================
-st.title("⚡ Kalkulator PLTS Pro V6.3")
-st.caption("Solusi Perhitungan PLTS: Akurat, Detail, & Analisis ROI.")
+def calc_bat(wh_load):
+    wh_real = wh_load * h_backup / BATTERY_SPECS[b_type]['dod']
+    s = int(np.ceil(v_sys / v_bat))
+    p = int(np.ceil((wh_real / v_sys) / ah_bat))
+    tot = s * p
+    return {"s": s, "p": p, "tot": tot, "kwh": (tot * v_bat * ah_bat)/1000}
 
-# TABS
-tab_dc, tab_on, tab_off, tab_hyb = st.tabs([
-    "💡 DC SYSTEM", 
-    "🏠 ON-GRID", 
-    "🔋 OFF-GRID", 
-    "🔄 HYBRID"
-])
+# --- TAB 1: DC SYSTEM ---
+with tab1:
+    wh_dc = wh_day / 0.85
+    n_p, tot_wp = calc_panel(wh_dc / h_sun)
+    d_bat = calc_bat(wh_dc)
+    scc_amp = (tot_wp / v_sys) * 1.25
 
-# ==============================================================================
-# TAB 1: DC SYSTEM
-# ==============================================================================
-with tab_dc:
-    eff_dc = 0.85
-    wh_load_dc = wh_harian_ac / eff_dc
-    wp_req_dc = wh_load_dc / hari_efektif
-    
-    qty_panel_dc, total_wp_dc = hitung_panel(wp_req_dc)
-    bat_dc = hitung_baterai_detail(wh_load_dc)
-    scc_amp = (total_wp_dc / volt_sistem) * 1.25
+    # Card 1: Header
+    st.markdown(f"""
+    <div class="card">
+        <h3 style='color:#1565C0; margin:0;'>Kapasitas: {tot_wp} Wp ({tot_wp/1000:.2f} kWp)</h3>
+        <p>Sistem ini hanya menyalakan beban DC. Tidak butuh inverter.</p>
+        <br>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.markdown(f"<div class='header-style'>Kapasitas: {total_wp_dc} Wp ({total_wp_dc/1000:.2f} kWp)</div>", unsafe_allow_html=True)
-    
+    # Card 2: Pros/Cons
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     display_pros_cons_system("DC")
-    # NEW: Menampilkan analisis komponen
-    display_component_analysis(jenis_panel, jenis_baterai)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("### 📋 Rincian Komponen & Spesifikasi Detail")
-    data_dc = [
-        {"Komponen": "Panel Surya", "Spesifikasi": f"{jenis_panel} {watt_panel_pilihan}Wp", "Jumlah": f"{qty_panel_dc} Unit"},
-        {"Komponen": "Baterai Utama", "Spesifikasi": f"{jenis_baterai} - {volt_baterai_unit}V {kapasitas_baterai_unit}Ah", "Jumlah": f"{bat_dc['total_unit']} Unit"},
-        {"Komponen": "Konfigurasi Baterai", "Spesifikasi": f"Rangkaian {bat_dc['seri']} Seri x {bat_dc['paralel']} Paralel", "Jumlah": "1 Set"},
-        {"Komponen": "Solar Charge Controller", "Spesifikasi": f"MPPT Controller {int(scc_amp)}A (Min {volt_sistem}V)", "Jumlah": "1 Unit"},
+    # Card 3: Component Analysis
+    display_component_analysis(p_type, b_type)
+
+    # Card 4: Specs Table
+    st.markdown('<div class="card"><h5>📋 Rincian Spesifikasi</h5>', unsafe_allow_html=True)
+    d_spec = [
+        {"Komponen": "Panel Surya", "Spesifikasi": f"{p_type} {wp_panel}Wp", "Jumlah": f"{n_p} Unit"},
+        {"Komponen": "Baterai", "Spesifikasi": f"{b_type} {v_bat}V {ah_bat}Ah", "Jumlah": f"{d_bat['tot']} Unit ({d_bat['s']}S {d_bat['p']}P)"},
+        {"Komponen": "SCC (Controller)", "Spesifikasi": f"MPPT Controller {int(scc_amp)}A (System {v_sys}V)", "Jumlah": "1 Unit"},
         {"Komponen": "Kabel & Safety", "Spesifikasi": "Kabel PV 4mm/6mm, MCB DC, Box Panel", "Jumlah": "1 Lot"}
     ]
-    st.dataframe(pd.DataFrame(data_dc), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(d_spec), use_container_width=True, hide_index=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # RAB UPDATE
-    st.markdown("<div class='sub-header'>💰 RAB & ROI</div>", unsafe_allow_html=True)
-    items_dc = [
-        {'item': f"Panel Surya {watt_panel_pilihan}Wp", 'qty': qty_panel_dc, 'unit': 'Unit', 'price': watt_panel_pilihan * PANEL_SPECS[jenis_panel]['price_per_wp']},
-        {'item': f"Baterai {kapasitas_baterai_unit}Ah", 'qty': bat_dc['total_unit'], 'unit': 'Unit', 'price': (volt_baterai_unit * kapasitas_baterai_unit / 1000) * BATTERY_SPECS[jenis_baterai]['price_per_kwh']},
-        {'item': f"SCC MPPT {int(scc_amp)}A", 'qty': 1, 'unit': 'Unit', 'price': 850000 + (scc_amp*15000)},
-        {'item': "Kabel PV & Aksesoris DC", 'qty': 1, 'unit': 'Lot', 'price': 500000 + (qty_panel_dc * 100000)},
-        {'item': "Jasa Rakit & Instalasi", 'qty': 1, 'unit': 'Lot', 'price': 1500000}
+    # Card 5: RAB & ROI
+    st.markdown('<div class="card"><h5>💰 RAB & ROI</h5>', unsafe_allow_html=True)
+    items = [
+        {'item': f"Panel {wp_panel}Wp", 'qty': n_p, 'unit': 'Unit', 'price': wp_panel * PANEL_SPECS[p_type]['price_per_wp']},
+        {'item': f"Baterai {ah_bat}Ah", 'qty': d_bat['tot'], 'unit': 'Unit', 'price': (v_bat*ah_bat/1000)*BATTERY_SPECS[b_type]['price_per_kwh']},
+        {'item': f"SCC {int(scc_amp)}A", 'qty': 1, 'unit': 'Unit', 'price': 800000 + (scc_amp*10000)},
+        {'item': "Kabel & Acc DC", 'qty': 1, 'unit': 'Lot', 'price': 500000 + (n_p*100000)},
+        {'item': "Jasa Instalasi", 'qty': 1, 'unit': 'Lot', 'price': 1500000}
     ]
-    df_rab_dc, total_rab_dc, l_dc, v_dc = generate_rab(items_dc)
-    
-    rc1, rc2 = st.columns([2, 1])
-    with rc1: st.table(df_rab_dc)
-    with rc2: st.pyplot(plot_rab_pie(l_dc, v_dc))
-    
-    savings_dc = estimated_bill_saving * 12
-    display_roi_analysis(total_rab_dc, savings_dc, "DC Battery")
+    df, tot_rab, l, v = generate_rab(items)
+    c1, c2 = st.columns([2, 1])
+    with c1: st.table(df)
+    with c2: st.pyplot(plot_rab_pie(l, v))
+    display_roi_analysis(tot_rab, est_bill*12, "DC Battery")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# ==============================================================================
-# TAB 2: ON-GRID
-# ==============================================================================
-with tab_on:
-    eff_on = 0.90
-    wp_req_on = wh_harian_ac / (hari_efektif * eff_on)
-    qty_panel_on, total_wp_on = hitung_panel(wp_req_on)
-    inv_cap_on = total_wp_on / 1000
+# --- TAB 2: ON-GRID ---
+with tab2:
+    n_p, tot_wp = calc_panel(wh_day / (h_sun * 0.9))
+    inv_cap = tot_wp / 1000
     
-    annual_kwh_prod = (total_wp_on * hari_efektif * 0.85 * 365) / 1000
-    # ROI Logic Fix: Hemat tidak bisa lebih besar dari tagihan (kecuali ekspor diperhitungkan, anggap net metering)
-    annual_savings = annual_kwh_prod * harga_per_kwh 
+    st.markdown(f"""
+    <div class="card">
+        <h3 style='color:#1565C0; margin:0;'>Kapasitas: {tot_wp} Wp ({tot_wp/1000:.2f} kWp)</h3>
+        <p>Terhubung ke PLN. Menghemat tagihan bulanan. Mati saat PLN padam.</p>
+        <br>
 
-    st.markdown(f"<div class='header-style'>Kapasitas: {total_wp_on} Wp ({total_wp_on/1000:.2f} kWp)</div>", unsafe_allow_html=True)
-    
+[Image of On-Grid solar system diagram]
+
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     display_pros_cons_system("On-Grid")
-    # NEW: Menampilkan analisis komponen (Tanpa Baterai)
-    display_component_analysis(jenis_panel, None)
-
-    st.markdown("### 📋 Rincian Komponen & Spesifikasi Detail")
-    data_on = [
-        {"Komponen": "Panel Surya", "Spesifikasi": f"{jenis_panel} - {watt_panel_pilihan} Wp", "Jumlah": f"{qty_panel_on} Unit"},
-        {"Komponen": "Inverter", "Spesifikasi": f"Grid-Tie Inverter {inv_cap_on:.1f} kW (Pure Sine Wave)", "Jumlah": "1 Unit"},
-        {"Komponen": "Mounting System", "Spesifikasi": "Rail Aluminium, Mid/End Clamp, Hook Tile/Tin", "Jumlah": f"{qty_panel_on} Set"},
-        {"Komponen": "Proteksi & Kabel", "Spesifikasi": "PV Cable, AC/DC Combiner Box (SPD, MCB)", "Jumlah": "1 Lot"}
+    st.markdown('</div>', unsafe_allow_html=True)
+    display_component_analysis(p_type, None)
+    
+    st.markdown('<div class="card"><h5>📋 Rincian Spesifikasi</h5>', unsafe_allow_html=True)
+    d_spec = [
+        {"Komponen": "Panel Surya", "Spesifikasi": f"{p_type} {wp_panel}Wp", "Jumlah": f"{n_p} Unit"},
+        {"Komponen": "Grid-Tie Inverter", "Spesifikasi": f"Inverter On-Grid {inv_cap:.1f} kW (Pure Sine Wave)", "Jumlah": "1 Unit"},
+        {"Komponen": "Mounting System", "Spesifikasi": "Rail Aluminium, Clamp Mid/End, Hook Tile/Tin", "Jumlah": f"{n_p} Set"},
+        {"Komponen": "Proteksi AC/DC", "Spesifikasi": "Combiner Box, SPD, MCB, Fuse", "Jumlah": "1 Lot"}
     ]
-    st.dataframe(pd.DataFrame(data_on), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(d_spec), use_container_width=True, hide_index=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("<div class='sub-header'>💰 RAB & ROI</div>", unsafe_allow_html=True)
-    items_on = [
-        {'item': f"Panel Surya {watt_panel_pilihan}Wp", 'qty': qty_panel_on, 'unit': 'Unit', 'price': watt_panel_pilihan * PANEL_SPECS[jenis_panel]['price_per_wp']},
-        {'item': f"Inverter Grid-Tie {inv_cap_on:.1f}kW", 'qty': 1, 'unit': 'Unit', 'price': 3000000 * (inv_cap_on if inv_cap_on > 1 else 1)},
-        {'item': "Mounting Kit (Rail & Clamp)", 'qty': qty_panel_on, 'unit': 'Set', 'price': 175000},
-        {'item': "Panel Proteksi (AC/DC Box Complete)", 'qty': 1, 'unit': 'Lot', 'price': 2000000 + (inv_cap_on * 100000)},
-        {'item': "Kabel PV, Konektor & Grounding", 'qty': 1, 'unit': 'Lot', 'price': 1500000 + (qty_panel_on * 50000)},
-        {'item': "Instalasi, Setting & SLO", 'qty': 1, 'unit': 'Ls', 'price': 3500000}
+    st.markdown('<div class="card"><h5>💰 RAB & ROI</h5>', unsafe_allow_html=True)
+    items = [
+        {'item': f"Panel {wp_panel}Wp", 'qty': n_p, 'unit': 'Unit', 'price': wp_panel * PANEL_SPECS[p_type]['price_per_wp']},
+        {'item': f"Inverter {inv_cap:.1f}kW", 'qty': 1, 'unit': 'Unit', 'price': 3000000 * (inv_cap if inv_cap > 1 else 1)},
+        {'item': "Mounting Kit", 'qty': n_p, 'unit': 'Set', 'price': 150000},
+        {'item': "Proteksi & Kabel", 'qty': 1, 'unit': 'Lot', 'price': 2000000 + (n_p*50000)},
+        {'item': "Instalasi & SLO", 'qty': 1, 'unit': 'Lot', 'price': 3500000}
     ]
-    df_rab_on, total_rab_on, l_on, v_on = generate_rab(items_on)
-    
-    rc1, rc2 = st.columns([2, 1])
-    with rc1: st.table(df_rab_on)
-    with rc2: st.pyplot(plot_rab_pie(l_on, v_on))
+    df, tot_rab, l, v = generate_rab(items)
+    c1, c2 = st.columns([2, 1])
+    with c1: st.table(df)
+    with c2: st.pyplot(plot_rab_pie(l, v))
+    display_roi_analysis(tot_rab, (tot_wp * h_sun * 0.85 * 365 / 1000) * trf, "On-Grid")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    display_roi_analysis(total_rab_on, annual_savings, "On-Grid System")
+# --- TAB 3: OFF-GRID ---
+with tab3:
+    n_p, tot_wp = calc_panel((wh_day/0.85)/h_sun)
+    d_bat = calc_bat(wh_day/0.85)
+    inv_cap = max(1000, wh_day/12 * 2) # Minimal 1000W
 
-# ==============================================================================
-# TAB 3: OFF-GRID
-# ==============================================================================
-with tab_off:
-    eff_off = 0.85
-    wh_load_off = wh_harian_ac / eff_off
-    wp_req_off = wh_load_off / hari_efektif
-    
-    qty_panel_off, total_wp_off = hitung_panel(wp_req_off)
-    bat_off = hitung_baterai_detail(wh_load_off)
-    # Kapasitas Inverter min 1.5x load running atau manual input
-    inv_watt_off_fix = (total_watt_manual if total_watt_manual > 0 else (wh_harian_ac/10)) * 2 
-    if inv_watt_off_fix < 1000: inv_watt_off_fix = 1000
+    st.markdown(f"""
+    <div class="card">
+        <h3 style='color:#1565C0; margin:0;'>Kapasitas: {tot_wp} Wp ({tot_wp/1000:.2f} kWp)</h3>
+        <p>Sistem mandiri 100%. Tidak tergantung PLN sama sekali.</p>
+        <br>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.markdown(f"<div class='header-style'>Kapasitas: {total_wp_off} Wp ({total_wp_off/1000:.2f} kWp)</div>", unsafe_allow_html=True)
-    
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     display_pros_cons_system("Off-Grid")
-    # NEW: Menampilkan analisis komponen
-    display_component_analysis(jenis_panel, jenis_baterai)
-
-    st.markdown("### 📋 Rincian Komponen & Spesifikasi Detail")
-    data_off = [
-        {"Komponen": "Panel Surya", "Spesifikasi": f"{jenis_panel} {watt_panel_pilihan} Wp", "Jumlah": f"{qty_panel_off} Unit"},
-        {"Komponen": "Baterai Bank", "Spesifikasi": f"{jenis_baterai} {bat_off['kwh_total']:.1f} kWh ({bat_off['total_unit']} unit)", "Jumlah": "1 Set"},
-        {"Komponen": "Inverter Off-Grid", "Spesifikasi": f"Pure Sine Wave {int(inv_watt_off_fix)}W (Surge 2x)", "Jumlah": "1 Unit"},
-        {"Komponen": "Balance of System", "Spesifikasi": "Rak Baterai, Kabel NYAF, Mounting PV, Proteksi", "Jumlah": "1 Lot"}
+    st.markdown('</div>', unsafe_allow_html=True)
+    display_component_analysis(p_type, b_type)
+    
+    st.markdown('<div class="card"><h5>📋 Rincian Spesifikasi</h5>', unsafe_allow_html=True)
+    d_spec = [
+        {"Komponen": "Panel Surya", "Spesifikasi": f"{p_type} {wp_panel}Wp", "Jumlah": f"{n_p} Unit"},
+        {"Komponen": "Baterai Bank", "Spesifikasi": f"{b_type} {v_bat}V {ah_bat}Ah (Total: {d_bat['kwh']:.1f} kWh)", "Jumlah": f"{d_bat['tot']} Unit"},
+        {"Komponen": "Inverter Off-Grid", "Spesifikasi": f"Pure Sine Wave {int(inv_cap)}W (Surge 2x)", "Jumlah": "1 Unit"},
+        {"Komponen": "BOS", "Spesifikasi": "Rak Baterai, Kabel, Panel Box", "Jumlah": "1 Lot"}
     ]
-    st.dataframe(pd.DataFrame(data_off), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(d_spec), use_container_width=True, hide_index=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("<div class='sub-header'>💰 RAB & ROI</div>", unsafe_allow_html=True)
-    items_off = [
-        {'item': f"Panel Surya {watt_panel_pilihan}Wp", 'qty': qty_panel_off, 'unit': 'Unit', 'price': watt_panel_pilihan * PANEL_SPECS[jenis_panel]['price_per_wp']},
-        {'item': f"Baterai Bank ({bat_off['kwh_total']:.1f}kWh)", 'qty': bat_off['total_unit'], 'unit': 'Unit', 'price': (volt_baterai_unit * kapasitas_baterai_unit / 1000) * BATTERY_SPECS[jenis_baterai]['price_per_kwh']},
-        {'item': f"Inverter Off-Grid {int(inv_watt_off_fix)}W + SCC", 'qty': 1, 'unit': 'Set', 'price': 3500000 + (inv_watt_off_fix * 1800)},
-        {'item': "Mounting Kit Panel Surya", 'qty': qty_panel_off, 'unit': 'Set', 'price': 175000},
-        {'item': "Panel Distribusi & Kabel Baterai", 'qty': 1, 'unit': 'Lot', 'price': 2500000},
-        {'item': "Instalasi Sistem", 'qty': 1, 'unit': 'Ls', 'price': 3000000}
+    st.markdown('<div class="card"><h5>💰 RAB & ROI</h5>', unsafe_allow_html=True)
+    items = [
+        {'item': f"Panel {wp_panel}Wp", 'qty': n_p, 'unit': 'Unit', 'price': wp_panel * PANEL_SPECS[p_type]['price_per_wp']},
+        {'item': f"Baterai Bank", 'qty': d_bat['tot'], 'unit': 'Unit', 'price': (v_bat*ah_bat/1000)*BATTERY_SPECS[b_type]['price_per_kwh']},
+        {'item': f"Inverter {int(inv_cap)}W", 'qty': 1, 'unit': 'Set', 'price': 3500000 + (inv_cap * 1500)},
+        {'item': "Mounting & Rak", 'qty': 1, 'unit': 'Lot', 'price': 2000000},
+        {'item': "Instalasi", 'qty': 1, 'unit': 'Lot', 'price': 3000000}
     ]
-    df_rab_off, total_rab_off, l_off, v_off = generate_rab(items_off)
-    
-    rc1, rc2 = st.columns([2, 1])
-    with rc1: st.table(df_rab_off)
-    with rc2: st.pyplot(plot_rab_pie(l_off, v_off))
-    
-    savings_off = estimated_bill_saving * 12
-    display_roi_analysis(total_rab_off, savings_off, "Off-Grid Battery")
+    df, tot_rab, l, v = generate_rab(items)
+    c1, c2 = st.columns([2, 1])
+    with c1: st.table(df)
+    with c2: st.pyplot(plot_rab_pie(l, v))
+    display_roi_analysis(tot_rab, est_bill*12, "Off-Grid Battery")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# ==============================================================================
-# TAB 4: HYBRID
-# ==============================================================================
-with tab_hyb:
-    backup_ratio = 0.5
-    wh_load_hyb = wh_harian_ac * backup_ratio
-    wp_req_hyb = wh_harian_ac / (hari_efektif * 0.9)
-    qty_panel_hyb, total_wp_hyb = hitung_panel(wp_req_hyb)
-    bat_hyb = hitung_baterai_detail(wh_load_hyb)
-    inv_cap_hyb = (total_wp_hyb / 1000) + 1
+# --- TAB 4: HYBRID ---
+with tab4:
+    n_p, tot_wp = calc_panel((wh_day/(h_sun*0.9)))
+    d_bat = calc_bat(wh_day*0.5) # Backup 50%
+    inv_cap = (tot_wp/1000) + 1
 
-    st.markdown(f"<div class='header-style'>Kapasitas: {total_wp_hyb} Wp ({total_wp_hyb/1000:.2f} kWp)</div>", unsafe_allow_html=True)
-    
+    st.markdown(f"""
+    <div class="card">
+        <h3 style='color:#1565C0; margin:0;'>Kapasitas: {tot_wp} Wp ({tot_wp/1000:.2f} kWp)</h3>
+        <p>Hemat tagihan + Backup saat mati lampu (UPS Function).</p>
+        <br>
+
+[Image of Hybrid solar inverter system diagram]
+
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="card">', unsafe_allow_html=True)
     display_pros_cons_system("Hybrid")
-    # NEW: Menampilkan analisis komponen
-    display_component_analysis(jenis_panel, jenis_baterai)
-
-    st.markdown("### 📋 Rincian Komponen & Spesifikasi Detail")
-    data_hyb = [
-        {"Komponen": "Panel Surya", "Spesifikasi": f"{jenis_panel} {watt_panel_pilihan} Wp", "Jumlah": f"{qty_panel_hyb} Unit"},
-        {"Komponen": "Inverter Hybrid", "Spesifikasi": f"Hybrid Inverter {inv_cap_hyb:.1f} kW (On-Grid + Backup)", "Jumlah": "1 Unit"},
-        {"Komponen": "Baterai Backup", "Spesifikasi": f"Bank {bat_hyb['kwh_total']:.1f} kWh ({jenis_baterai})", "Jumlah": f"{bat_hyb['total_unit']} Unit"},
-        {"Komponen": "Sistem Proteksi", "Spesifikasi": "ATS/COS, Surge Protection, Grounding, Wifi Kit", "Jumlah": "1 Lot"}
-    ]
-    st.dataframe(pd.DataFrame(data_hyb), use_container_width=True, hide_index=True)
-
-    st.markdown("<div class='sub-header'>💰 RAB & ROI</div>", unsafe_allow_html=True)
-    items_hyb = [
-        {'item': f"Panel Surya {watt_panel_pilihan}Wp", 'qty': qty_panel_hyb, 'unit': 'Unit', 'price': watt_panel_pilihan * PANEL_SPECS[jenis_panel]['price_per_wp']},
-        {'item': f"Baterai Backup", 'qty': bat_hyb['total_unit'], 'unit': 'Unit', 'price': (volt_baterai_unit * kapasitas_baterai_unit / 1000) * BATTERY_SPECS[jenis_baterai]['price_per_kwh']},
-        {'item': f"Inverter Hybrid {inv_cap_hyb:.1f}kW", 'qty': 1, 'unit': 'Unit', 'price': 7500000 * (inv_cap_hyb if inv_cap_hyb > 1 else 1)},
-        {'item': "Mounting & Rak Baterai", 'qty': 1, 'unit': 'Lot', 'price': 1500000 + (qty_panel_hyb * 175000)},
-        {'item': "Kabel, Proteksi, & ATS", 'qty': 1, 'unit': 'Lot', 'price': 3500000},
-        {'item': "Instalasi Lengkap", 'qty': 1, 'unit': 'Ls', 'price': 5000000}
-    ]
-    df_rab_hyb, total_rab_hyb, l_hyb, v_hyb = generate_rab(items_hyb)
+    st.markdown('</div>', unsafe_allow_html=True)
+    display_component_analysis(p_type, b_type)
     
-    rc1, rc2 = st.columns([2, 1])
-    with rc1: st.table(df_rab_hyb)
-    with rc2: st.pyplot(plot_rab_pie(l_hyb, v_hyb))
+    st.markdown('<div class="card"><h5>📋 Rincian Spesifikasi</h5>', unsafe_allow_html=True)
+    d_spec = [
+        {"Komponen": "Panel Surya", "Spesifikasi": f"{p_type} {wp_panel}Wp", "Jumlah": f"{n_p} Unit"},
+        {"Komponen": "Inverter Hybrid", "Spesifikasi": f"Hybrid Inverter {inv_cap:.1f} kW (On-Grid + Battery Backup)", "Jumlah": "1 Unit"},
+        {"Komponen": "Baterai Backup", "Spesifikasi": f"{b_type} {v_bat}V {ah_bat}Ah (Backup 50% Load)", "Jumlah": f"{d_bat['tot']} Unit"},
+        {"Komponen": "Sistem Proteksi", "Spesifikasi": "ATS/COS, Surge Protection, Grounding", "Jumlah": "1 Lot"}
+    ]
+    st.dataframe(pd.DataFrame(d_spec), use_container_width=True, hide_index=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    annual_kwh_prod_hyb = (total_wp_hyb * hari_efektif * 0.85 * 365) / 1000
-    annual_savings_hyb = annual_kwh_prod_hyb * harga_per_kwh
-    display_roi_analysis(total_rab_hyb, annual_savings_hyb, "Hybrid System")
+    st.markdown('<div class="card"><h5>💰 RAB & ROI</h5>', unsafe_allow_html=True)
+    items = [
+        {'item': f"Panel {wp_panel}Wp", 'qty': n_p, 'unit': 'Unit', 'price': wp_panel * PANEL_SPECS[p_type]['price_per_wp']},
+        {'item': "Baterai Backup", 'qty': d_bat['tot'], 'unit': 'Unit', 'price': (v_bat*ah_bat/1000)*BATTERY_SPECS[b_type]['price_per_kwh']},
+        {'item': f"Inverter {inv_cap:.1f}kW", 'qty': 1, 'unit': 'Unit', 'price': 8000000 + (inv_cap * 2000000)},
+        {'item': "Aksesoris & ATS", 'qty': 1, 'unit': 'Lot', 'price': 3500000},
+        {'item': "Instalasi Lengkap", 'qty': 1, 'unit': 'Lot', 'price': 5000000}
+    ]
+    df, tot_rab, l, v = generate_rab(items)
+    c1, c2 = st.columns([2, 1])
+    with c1: st.table(df)
+    with c2: st.pyplot(plot_rab_pie(l, v))
+    display_roi_analysis(tot_rab, (tot_wp * h_sun * 0.85 * 365 / 1000) * trf, "Hybrid")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown("---")
-st.caption("Kalkulator PLTS Pro V6.3 - Ultimate Edition")
+st.caption("Kalkulator PLTS Pro V6.7 - Ultimate Edition")
