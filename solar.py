@@ -312,12 +312,12 @@ def display_component_analysis(panel_type, bat_type=None):
 # ==========================================
 st.sidebar.title("🎛️ Parameter Input")
 
-#file_musik = 'audiobg.mp3' 
-#audio_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), file_musik)
-#if os.path.isfile(audio_path):
- #   st.sidebar.markdown("### 🎵 Musik Latar")
-  #  st.sidebar.audio(audio_path, format='audio/mp3', start_time=0)
-   # st.sidebar.markdown("---")
+file_musik = 'audiobg.mp3' 
+audio_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), file_musik)
+if os.path.isfile(audio_path):
+    st.sidebar.markdown("### 🎵 Musik Latar")
+    st.sidebar.audio(audio_path, format='audio/mp3', start_time=0)
+    st.sidebar.markdown("---")
 
 st.sidebar.markdown("### 1️⃣ Profil Listrik")
 metode = st.sidebar.radio("Hitung Berdasarkan:", ["Tagihan (Estimasi)", "Manual (Watt)"])
